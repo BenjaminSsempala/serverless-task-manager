@@ -4,7 +4,7 @@ A task management system built on AWS serverless services. **Admins** create, as
 
 > 🚧 **Status:** in active development.
 
-**Live app:** _coming soon_
+**Live app:** https://main.dou2fg6xeliu9.amplifyapp.com
 
 ## Architecture
 
@@ -41,7 +41,7 @@ docs/       Architecture notes and deployment evidence
 ## Roadmap
 
 - [x] Repository set up
-- [ ] Frontend skeleton deployed to Amplify (live link)
+- [x] Frontend skeleton deployed to Amplify (live link)
 - [ ] Cognito user pool with Admin / TeamMember groups
 - [ ] DynamoDB tables and API Gateway
 - [ ] Task Lambda functions
