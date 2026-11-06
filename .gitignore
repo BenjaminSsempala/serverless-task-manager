@@ -1,0 +1,25 @@
+# Node
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# AWS SAM
+.aws-sam/
+samconfig.local.toml
+
+# Amplify
+amplify/#current-cloud-backend
+aws-exports.js
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
