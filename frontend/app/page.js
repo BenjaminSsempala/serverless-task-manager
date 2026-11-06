@@ -1,11 +1,11 @@
 const features = [
-  'Admins create, assign and track tasks',
-  'Team members view and update their tasks',
-  'Email notifications for assignments and updates',
-  'Deadline reminders',
-]
+  "Admins create, assign and track tasks",
+  "Team members view and update their tasks",
+  "Email notifications for assignments and updates",
+  "Deadline reminders",
+];
 
-function App() {
+export default function Home() {
   return (
     <main className="page">
       <header>
@@ -24,11 +24,9 @@ function App() {
       </section>
 
       <footer>
-        Built with API Gateway, Lambda, DynamoDB, Cognito and SNS ·{' '}
+        Built with API Gateway, Lambda, DynamoDB, Cognito and SNS ·{" "}
         <a href="https://github.com/BenjaminSsempala/serverless-task-manager">Source</a>
       </footer>
     </main>
-  )
+  );
 }
-
-export default App
