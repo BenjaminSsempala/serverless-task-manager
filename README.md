@@ -17,7 +17,7 @@ A task management system built on AWS serverless services. **Admins** create, as
 | Amazon SNS | Assignment, update and deadline notifications |
 | Amazon S3 | Task file attachments |
 | Amazon CloudWatch | Logs and monitoring |
-| Amazon EventBridge Scheduler | Periodic deadline-reminder checks |
+| Amazon EventBridge Scheduler | Hourly deadline-reminder checks |
 | AWS Amplify Hosting | Frontend hosting with CI/CD from this repo |
 
 ## API
@@ -40,11 +40,16 @@ docs/       Architecture notes and deployment evidence
 
 ## Roadmap
 
-- [x] Repository set up
-- [x] Frontend skeleton deployed to Amplify (live link)
-- [x] Cognito user pool with Admin / TeamMember groups
-- [ ] DynamoDB tables and API Gateway
-- [ ] Task Lambda functions
-- [ ] SNS notifications and deadline reminders
-- [ ] S3 attachments
+Full requirements, data model, workflows and security plan: [docs/planning.md](docs/planning.md).
+
+- [x] **Phase 1 — Requirements and planning** ([planning doc](docs/planning.md))
+- [ ] **Phase 2 — Environment setup**
+  - [x] Cognito user pool with Admin / TeamMember groups
+  - [ ] DynamoDB tables
+  - [ ] API Gateway with Cognito authorizer
+- [ ] **Phase 3 — Lambda development**
+- [ ] **Phase 4 — API Gateway configuration**
+- [ ] **Phase 5 — Notification system** (SNS, deadline reminders)
+- [x] Frontend deployed to Amplify (live link) with login
+- [ ] Admin and team-member dashboards
 - [ ] Deployment evidence in `docs/`
