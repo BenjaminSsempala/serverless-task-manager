@@ -42,7 +42,7 @@ docs/       Architecture notes and deployment evidence
 
 - [x] Repository set up
 - [x] Frontend skeleton deployed to Amplify (live link)
-- [ ] Cognito user pool with Admin / TeamMember groups
+- [x] Cognito user pool with Admin / TeamMember groups
 - [ ] DynamoDB tables and API Gateway
 - [ ] Task Lambda functions
 - [ ] SNS notifications and deadline reminders
