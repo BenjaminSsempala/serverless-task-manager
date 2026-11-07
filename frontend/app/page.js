@@ -1,9 +1,4 @@
-const features = [
-  "Admins create, assign and track tasks",
-  "Team members view and update their tasks",
-  "Email notifications for assignments and updates",
-  "Deadline reminders",
-];
+import AuthGate from "@/components/AuthGate";
 
 export default function Home() {
   return (
@@ -14,14 +9,7 @@ export default function Home() {
         <p className="lead">A serverless task management system on AWS.</p>
       </header>
 
-      <section className="card">
-        <h2>Coming soon</h2>
-        <ul>
-          {features.map((f) => (
-            <li key={f}>{f}</li>
-          ))}
-        </ul>
-      </section>
+      <AuthGate />
 
       <footer>
         Built with API Gateway, Lambda, DynamoDB, Cognito and SNS ·{" "}
