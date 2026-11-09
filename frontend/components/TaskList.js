@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateTask } from "@/lib/api";
+import { assignTask, updateTask } from "@/lib/api";
 
 const statuses = ["TODO", "IN_PROGRESS", "COMPLETED"];
 const label = { TODO: "To do", IN_PROGRESS: "In progress", COMPLETED: "Completed" };
@@ -12,22 +12,25 @@ function formatDeadline(deadline) {
   return Number.isNaN(date.getTime()) ? deadline : date.toLocaleString();
 }
 
-function TaskItem({ task, isAdmin, assigneeName, onUpdated }) {
+function TaskItem({ task, isAdmin, users, assigneeName, onUpdated }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const overdue = task.deadline && task.status !== "COMPLETED" && new Date(task.deadline) < new Date();
 
-  async function changeStatus(e) {
+  async function save(action) {
     setSaving(true);
     setError("");
     try {
-      onUpdated(await updateTask(task.taskId, { status: e.target.value }));
+      onUpdated(await action());
     } catch (err) {
       setError(err.message);
     } finally {
       setSaving(false);
     }
   }
+
+  const changeStatus = (e) => save(() => updateTask(task.taskId, { status: e.target.value }));
+  const changeAssignee = (e) => save(() => assignTask(task.taskId, e.target.value));
 
   return (
     <li className="task">
@@ -48,7 +51,19 @@ function TaskItem({ task, isAdmin, assigneeName, onUpdated }) {
             Due {formatDeadline(task.deadline)}{overdue && " · overdue"}
           </span>
         )}
-        {isAdmin && <span>Assignee: {assigneeName}</span>}
+        {isAdmin && (
+          <label className="assign">
+            Assigned to
+            <select value={task.assigneeId ?? ""} onChange={changeAssignee} disabled={saving}>
+              {!users.some((u) => u.userId === task.assigneeId) && (
+                <option value={task.assigneeId ?? ""}>{assigneeName ?? "Unassigned"}</option>
+              )}
+              {users.map((u) => (
+                <option key={u.userId} value={u.userId}>{u.name || u.email}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </p>
       {error && <p className="error">{error}</p>}
     </li>
@@ -67,6 +82,7 @@ export default function TaskList({ tasks, isAdmin, users = [], onUpdated }) {
           key={t.taskId}
           task={t}
           isAdmin={isAdmin}
+          users={users}
           assigneeName={names[t.assigneeId] ?? t.assigneeId}
           onUpdated={onUpdated}
         />

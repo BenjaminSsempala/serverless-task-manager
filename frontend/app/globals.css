@@ -95,3 +95,5 @@ main.page > section + section, main.page > section + form, main.page > form + se
 .task:first-child { border-top: none; padding-top: 0; }
 .task h3 { margin: 0; font-size: 1rem; }
 .task .muted { margin: 4px 0 0; }
+.assign { display: inline-flex; align-items: center; gap: 8px; }
+.assign select { padding: 4px 8px; font-size: 0.85rem; }

@@ -63,9 +63,10 @@ exports.handler = withIdentity("Update task", async (event, userId, groups) => {
     return response(400, { message: "deadline must be a date string" });
   }
 
-  const names = { "#updatedAt": "updatedAt" };
-  const values = { ":updatedAt": new Date().toISOString() };
-  const assignments = ["#updatedAt = :updatedAt"];
+  // updatedBy lets the notification email say who made the change.
+  const names = { "#updatedAt": "updatedAt", "#updatedBy": "updatedBy" };
+  const values = { ":updatedAt": new Date().toISOString(), ":updatedBy": userId };
+  const assignments = ["#updatedAt = :updatedAt", "#updatedBy = :updatedBy"];
 
   for (const [index, [field, value]] of Object.entries(changes).entries()) {
     const name = `#field${index}`;

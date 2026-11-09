@@ -24,3 +24,5 @@ export const createTask = (task) =>
 export const updateTask = (id, changes) =>
   request(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(changes) }).then((d) => d.task);
 export const listUsers = () => request("/users").then((d) => d.users);
+export const assignTask = (id, assigneeId) =>
+  request(`/tasks/${id}/assign`, { method: "PUT", body: JSON.stringify({ assigneeId }) }).then((d) => d.task);

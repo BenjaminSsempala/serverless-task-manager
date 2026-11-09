@@ -90,6 +90,9 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      # Streams every change  to the TaskNotification Lambda.
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
 
   UsersTable:
     Type: AWS::DynamoDB::Table
@@ -224,6 +227,33 @@ Resources:
             Path: /tasks/{taskId}
             Method: put
 
+  # Task Assignment Lambda (Admin only)
+  AssignTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: assign.handler
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+          USERS_TABLE: !Ref UsersTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:UpdateItem
+              Resource: !GetAtt TasksTable.Arn
+            - Effect: Allow
+              Action: dynamodb:GetItem
+              Resource: !GetAtt UsersTable.Arn
+      Events:
+        AssignTask:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks/{taskId}/assign
+            Method: put
+
   # Lists users so Admins can choose an assignee (Admin only)
   ListUsersFunction:
     Type: AWS::Serverless::Function
@@ -253,6 +283,35 @@ Resources:
     Properties:
       TopicName: !Sub ${AWS::StackName}-notifications
       DisplayName: Task Manager
+
+  # Task Status Notification Lambda: reads task changes from the DynamoDB
+  # stream and emails the assignee (assigned, deadline changed) or admins (status changed).
+  TaskNotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: notify.handler
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+          TOPIC_ARN: !Ref NotificationsTopic
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref NotificationsTopic
+            - Effect: Allow
+              Action: dynamodb:GetItem
+              Resource: !GetAtt UsersTable.Arn
+      Events:
+        TaskChanges:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt TasksTable.StreamArn
+            StartingPosition: LATEST
+            BatchSize: 10
+            MaximumRetryAttempts: 2
 
   # Adds every newly confirmed user to the TeamMember group.
   PostConfirmationFunction:
