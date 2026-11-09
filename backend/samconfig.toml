@@ -7,5 +7,5 @@ stack_name = "serverless-task-manager"
 region = "eu-west-1"
 capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
-confirm_changeset = false
+confirm_changeset = true
 fail_on_empty_changeset = false

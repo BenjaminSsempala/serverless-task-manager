@@ -10,6 +10,10 @@ Globals:
     MemorySize: 128
     LoggingConfig:
       LogFormat: JSON
+    Environment:
+      Variables:
+        # Browser origins allowed to call the API (comma-separated).
+        ALLOWED_ORIGINS: https://main.dou2fg6xeliu9.amplifyapp.com,http://localhost:3000
 
 Resources:
   # ---------- Authentication ----------
@@ -47,6 +51,7 @@ Resources:
       ExplicitAuthFlows:
         - ALLOW_USER_SRP_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
       PreventUserExistenceErrors: ENABLED
 
   AdminGroup:
@@ -65,6 +70,183 @@ Resources:
       UserPoolId: !Ref UserPool
       Precedence: 1
 
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-tasks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: taskId
+          AttributeType: S
+        - AttributeName: assigneeId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: taskId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: AssigneeIndex
+          KeySchema:
+            - AttributeName: assigneeId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+    
+  TaskApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Cors:
+        # Single value only; the Lambdas enforce the ALLOWED_ORIGINS allowlist.
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Authorization,Content-Type'"
+        AllowMethods: "'GET,POST,PUT,OPTIONS'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+      GatewayResponses:
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+
+  # Task Creation Lambda (Admin only)
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: create.handler
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt TasksTable.Arn
+      Events:
+        CreateTask:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks
+            Method: post
+
+  # Lists all tasks for Admins, assigned tasks for Team Members
+  ListTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: list.handler
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Scan
+              Resource: !GetAtt TasksTable.Arn
+            - Effect: Allow
+              Action: dynamodb:Query
+              Resource: !Sub ${TasksTable.Arn}/index/AssigneeIndex
+      Events:
+        ListTasks:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks
+            Method: get
+
+  # Returns one task to an Admin or its assignee
+  GetTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: get.handler
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: !GetAtt TasksTable.Arn
+      Events:
+        GetTask:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks/{taskId}
+            Method: get
+
+  # Task Update Lambda (Admins: any field; Team Members: status only)
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: update.handler
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt TasksTable.Arn
+      Events:
+        UpdateTask:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks/{taskId}
+            Method: put
+
+  # Lists users so Admins can choose an assignee (Admin only)
+  ListUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: users.handler
+      Environment:
+        Variables:
+          USERS_TABLE: !Ref UsersTable
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:Scan
+              Resource: !GetAtt UsersTable.Arn
+      Events:
+        ListUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /users
+            Method: get
+
   # Adds every newly confirmed user to the TeamMember group.
   PostConfirmationFunction:
     Type: AWS::Serverless::Function
@@ -74,12 +256,15 @@ Resources:
       Environment:
         Variables:
           DEFAULT_GROUP: TeamMember
+          USERS_TABLE: !Ref UsersTable
       Policies:
         - Statement:
             - Effect: Allow
               Action: cognito-idp:AdminAddUserToGroup
-              # Wildcard avoids a circular dependency between the pool and its trigger.
               Resource: !Sub arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt UsersTable.Arn
       Events:
         CognitoPostConfirmation:
           Type: Cognito
@@ -94,3 +279,10 @@ Outputs:
     Value: !Ref UserPool
   UserPoolClientId:
     Value: !Ref UserPoolClient
+  ApiUrl:
+    Description: Base URL for the task API stage
+    Value: !Sub https://${TaskApi}.execute-api.${AWS::Region}.amazonaws.com/dev/
+  TasksTableName:
+    Value: !Ref TasksTable
+  UsersTableName:
+    Value: !Ref UsersTable

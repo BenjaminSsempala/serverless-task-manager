@@ -70,3 +70,28 @@ footer a { color: var(--accent); }
 .button:hover { border-color: var(--accent); }
 
 [data-amplify-authenticator] { --amplify-components-authenticator-router-box-shadow: none; }
+
+main.page > section + section, main.page > section + form, main.page > form + section { margin-top: 24px; }
+.meta { font-size: 0.85rem; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0; }
+.meta code, code { font-size: 0.8rem; word-break: break-all; }
+.error { color: #d93025; font-size: 0.9rem; }
+.overdue { color: #d93025; font-weight: 600; }
+
+.form { display: flex; flex-direction: column; gap: 12px; }
+.form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.form input, .form textarea, select {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; align-self: flex-start; }
+.button:disabled { opacity: 0.6; cursor: default; }
+
+.tasks { list-style: none; margin: 0; padding: 0; }
+.task { padding: 16px 0; border-top: 1px solid var(--border); }
+.task:first-child { border-top: none; padding-top: 0; }
+.task h3 { margin: 0; font-size: 1rem; }
+.task .muted { margin: 4px 0 0; }
