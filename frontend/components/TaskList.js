@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { assignTask, updateTask } from "@/lib/api";
+import { assignTask, notifyTask, updateTask } from "@/lib/api";
 
 const statuses = ["TODO", "IN_PROGRESS", "COMPLETED"];
 const label = { TODO: "To do", IN_PROGRESS: "In progress", COMPLETED: "Completed" };
@@ -31,6 +31,22 @@ function TaskItem({ task, isAdmin, users, assigneeName, onUpdated }) {
 
   const changeStatus = (e) => save(() => updateTask(task.taskId, { status: e.target.value }));
   const changeAssignee = (e) => save(() => assignTask(task.taskId, e.target.value));
+
+  const [notice, setNotice] = useState("");
+  async function sendReminder() {
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await notifyTask(task.taskId);
+      setNotice("Reminder sent");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+  const canRemind = isAdmin && task.deadline && task.assigneeId && task.status !== "COMPLETED";
 
   return (
     <li className="task">
@@ -65,6 +81,12 @@ function TaskItem({ task, isAdmin, users, assigneeName, onUpdated }) {
           </label>
         )}
       </p>
+      {canRemind && (
+        <button className="button small" onClick={sendReminder} disabled={saving}>
+          Send reminder
+        </button>
+      )}
+      {notice && <p className="notice">{notice}</p>}
       {error && <p className="error">{error}</p>}
     </li>
   );

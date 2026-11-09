@@ -21,8 +21,8 @@ exports.handler = withIdentity("Create task", async (event, userId, groups) => {
   if (typeof description !== "string" || description.length > 2000) {
     return response(400, { message: "description must be at most 2000 characters" });
   }
-  if (deadline !== undefined && typeof deadline !== "string") {
-    return response(400, { message: "deadline must be a date string" });
+  if (deadline !== undefined && (typeof deadline !== "string" || Number.isNaN(Date.parse(deadline)))) {
+    return response(400, { message: "deadline must be an ISO 8601 date string" });
   }
 
   const task = {
@@ -34,7 +34,8 @@ exports.handler = withIdentity("Create task", async (event, userId, groups) => {
     createdBy: userId,
     createdAt: new Date().toISOString(),
   };
-  if (deadline) task.deadline = deadline;
+  // Normalised to UTC ISO format 
+  if (deadline) task.deadline = new Date(deadline).toISOString();
 
   await dynamodb.send(new PutCommand({ TableName: tableName, Item: task }));
   return response(201, { task });

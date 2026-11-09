@@ -59,9 +59,13 @@ exports.handler = withIdentity("Update task", async (event, userId, groups) => {
   ) {
     return response(400, { message: "assigneeId must be a non-empty string" });
   }
-  if ("deadline" in changes && typeof changes.deadline !== "string") {
-    return response(400, { message: "deadline must be a date string" });
+  if (
+    "deadline" in changes &&
+    (typeof changes.deadline !== "string" || Number.isNaN(Date.parse(changes.deadline)))
+  ) {
+    return response(400, { message: "deadline must be an ISO 8601 date string" });
   }
+  if ("deadline" in changes) changes.deadline = new Date(changes.deadline).toISOString();
 
   // updatedBy lets the notification email say who made the change.
   const names = { "#updatedAt": "updatedAt", "#updatedBy": "updatedBy" };
@@ -80,7 +84,10 @@ exports.handler = withIdentity("Update task", async (event, userId, groups) => {
     new UpdateCommand({
       TableName: tableName,
       Key: { taskId },
-      UpdateExpression: `SET ${assignments.join(", ")}`,
+      // A new deadline needs fresh reminders
+      UpdateExpression:
+        `SET ${assignments.join(", ")}` +
+        ("deadline" in changes ? " REMOVE reminderSentAt, overdueNotifiedAt" : ""),
       ExpressionAttributeNames: names,
       ExpressionAttributeValues: values,
       ReturnValues: "ALL_NEW",

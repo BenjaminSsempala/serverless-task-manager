@@ -80,6 +80,10 @@ Resources:
           AttributeType: S
         - AttributeName: assigneeId
           AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: deadline
+          AttributeType: S
       KeySchema:
         - AttributeName: taskId
           KeyType: HASH
@@ -88,6 +92,15 @@ Resources:
           KeySchema:
             - AttributeName: assigneeId
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        # Finds open tasks by deadline for reminders. Tasks without a deadline aren't indexed.
+        - IndexName: StatusDeadlineIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: deadline
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
       # Streams every change  to the TaskNotification Lambda.
@@ -312,6 +325,49 @@ Resources:
             StartingPosition: LATEST
             BatchSize: 10
             MaximumRetryAttempts: 2
+
+  # Deadline Reminder Lambda: runs hourly to remind assignees of tasks due within
+  # 24 hours (and flag overdue ones), and on POST /tasks/{taskId}/notify for one task.
+  DeadlineReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs24.x
+      CodeUri: src/tasks/
+      Handler: reminder.handler
+      Timeout: 60
+      Environment:
+        Variables:
+          TASKS_TABLE: !Ref TasksTable
+          USERS_TABLE: !Ref UsersTable
+          TOPIC_ARN: !Ref NotificationsTopic
+          REMINDER_WINDOW_HOURS: "24"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:UpdateItem
+              Resource: !GetAtt TasksTable.Arn
+            - Effect: Allow
+              Action: dynamodb:Query
+              Resource: !Sub ${TasksTable.Arn}/index/StatusDeadlineIndex
+            - Effect: Allow
+              Action: dynamodb:GetItem
+              Resource: !GetAtt UsersTable.Arn
+            - Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref NotificationsTopic
+      Events:
+        Hourly:
+          Type: ScheduleV2
+          Properties:
+            ScheduleExpression: rate(1 hour)
+        NotifyTask:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TaskApi
+            Path: /tasks/{taskId}/notify
+            Method: post
 
   # Adds every newly confirmed user to the TeamMember group.
   PostConfirmationFunction:

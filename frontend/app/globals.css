@@ -97,3 +97,5 @@ main.page > section + section, main.page > section + form, main.page > form + se
 .task .muted { margin: 4px 0 0; }
 .assign { display: inline-flex; align-items: center; gap: 8px; }
 .assign select { padding: 4px 8px; font-size: 0.85rem; }
+.button.small { padding: 4px 10px; font-size: 0.85rem; }
+.notice { color: #1e8e3e; font-size: 0.85rem; margin: 6px 0 0; }
