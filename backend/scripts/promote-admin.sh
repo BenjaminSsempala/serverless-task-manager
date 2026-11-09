@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Promotes a user to Admin: adds them to the Cognito Admin group and
-# updates their role in the Users table so GET /users shows it.
+# Promotes a user to Admin: adds them to the Cognito Admin group, updates
+# their role in the Users table so GET /users shows it, and lets their
+# notification subscription receive messages addressed to "admins".
 echo "Usage: ./promote-admin.sh user@example.com"
 set -euo pipefail
 
@@ -28,5 +29,18 @@ aws dynamodb update-item --region "$REGION" --table-name "$USERS_TABLE" \
   --update-expression "SET #role = :admin" \
   --expression-attribute-names '{"#role": "role"}' \
   --expression-attribute-values '{":admin": {"S": "Admin"}}'
+
+TOPIC_ARN=$(output NotificationsTopicArn)
+SUB_ARN=$(aws sns list-subscriptions-by-topic --region "$REGION" --topic-arn "$TOPIC_ARN" \
+  --query "Subscriptions[?Endpoint=='$EMAIL'].SubscriptionArn | [0]" --output text)
+
+if [[ "$SUB_ARN" == arn:* ]]; then
+  aws sns set-subscription-attributes --region "$REGION" --subscription-arn "$SUB_ARN" \
+    --attribute-name FilterPolicy \
+    --attribute-value "{\"recipient\": [\"$USER_ID\", \"admins\"]}"
+  echo "Admin notifications enabled for $EMAIL."
+else
+  echo "Note: $EMAIL has no confirmed notification subscription yet; run this again after they confirm it."
+fi
 
 echo "$EMAIL ($USER_ID) is now an Admin. They need to sign out and back in."

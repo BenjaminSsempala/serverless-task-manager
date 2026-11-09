@@ -1,9 +1,11 @@
+import json
 import os
 from datetime import datetime, timezone
 
 import boto3
 
 cognito = boto3.client("cognito-idp")
+sns = boto3.client("sns")
 users_table = boto3.resource("dynamodb").Table(os.environ["USERS_TABLE"])
 
 
@@ -27,5 +29,13 @@ def handler(event, context):
                 "role": group,
                 "createdAt": datetime.now(timezone.utc).isoformat(),
             }
+        )
+
+        # Subscribe their email to task notifications
+        sns.subscribe(
+            TopicArn=os.environ["TOPIC_ARN"],
+            Protocol="email",
+            Endpoint=attributes["email"],
+            Attributes={"FilterPolicy": json.dumps({"recipient": [attributes["sub"]]})},
         )
     return event

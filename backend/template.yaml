@@ -12,7 +12,7 @@ Globals:
       LogFormat: JSON
     Environment:
       Variables:
-        # Browser origins allowed to call the API (comma-separated).
+        # Browser origins allowed to call the API
         ALLOWED_ORIGINS: https://main.dou2fg6xeliu9.amplifyapp.com,http://localhost:3000
 
 Resources:
@@ -246,6 +246,13 @@ Resources:
             RestApiId: !Ref TaskApi
             Path: /users
             Method: get
+            
+  # One topic for all task emails. Each user's email subscription has a filter
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub ${AWS::StackName}-notifications
+      DisplayName: Task Manager
 
   # Adds every newly confirmed user to the TeamMember group.
   PostConfirmationFunction:
@@ -257,6 +264,7 @@ Resources:
         Variables:
           DEFAULT_GROUP: TeamMember
           USERS_TABLE: !Ref UsersTable
+          TOPIC_ARN: !Ref NotificationsTopic
       Policies:
         - Statement:
             - Effect: Allow
@@ -265,6 +273,9 @@ Resources:
             - Effect: Allow
               Action: dynamodb:PutItem
               Resource: !GetAtt UsersTable.Arn
+            - Effect: Allow
+              Action: sns:Subscribe
+              Resource: !Ref NotificationsTopic 
       Events:
         CognitoPostConfirmation:
           Type: Cognito
@@ -286,3 +297,5 @@ Outputs:
     Value: !Ref TasksTable
   UsersTableName:
     Value: !Ref UsersTable
+  NotificationsTopicArn:
+    Value: !Ref NotificationsTopic
