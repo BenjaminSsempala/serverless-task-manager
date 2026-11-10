@@ -99,3 +99,8 @@ main.page > section + section, main.page > section + form, main.page > form + se
 .assign select { padding: 4px 8px; font-size: 0.85rem; }
 .button.small { padding: 4px 10px; font-size: 0.85rem; }
 .notice { color: #1e8e3e; font-size: 0.85rem; margin: 6px 0 0; }
+.attachments { margin-top: 8px; font-size: 0.9rem; }
+.attachments summary { cursor: pointer; color: var(--muted); }
+.attachments ul { margin: 8px 0; padding-left: 20px; }
+.attachments a { color: var(--accent); }
+.button.upload { display: inline-block; margin-top: 6px; }

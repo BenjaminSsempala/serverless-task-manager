@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Attachments from "@/components/Attachments";
 import { assignTask, notifyTask, updateTask } from "@/lib/api";
 
 const statuses = ["TODO", "IN_PROGRESS", "COMPLETED"];
@@ -87,6 +88,7 @@ function TaskItem({ task, isAdmin, users, assigneeName, onUpdated }) {
         </button>
       )}
       {notice && <p className="notice">{notice}</p>}
+      <Attachments taskId={task.taskId} />
       {error && <p className="error">{error}</p>}
     </li>
   );
