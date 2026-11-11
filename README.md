@@ -236,3 +236,4 @@ Following the phases in the lab brief:
 | 8 | [SNS subscriptions](docs/evidence/08-sns-subscriptions.png) | Notifications topic with two confirmed email subscriptions |
 | 9 | [S3 bucket](docs/evidence/09-s3-attachments-bucket.png) | Attachments bucket in `eu-west-1` |
 | 10 | [Amplify deployment](docs/evidence/10-amplify-deployment.png) | `main` branch deployed from GitHub to the live URL |
+| 11 | [Reminder email](docs/evidence/11-email.png) | SNS deadline reminder delivered to the team member's inbox |
